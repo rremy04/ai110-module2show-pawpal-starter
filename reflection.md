@@ -6,6 +6,8 @@
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+- They want to be able to Track pet care tasks for example walks, feeding. Consider constraints for example time available, priority and produce a daily plan and explain why it chose that plan
+- I think we would need, Owner, Pet, Task, Scheduler
 
 **b. Design changes**
 
