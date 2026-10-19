@@ -1,0 +1,42 @@
+classDiagram
+    %% PawPal+ draft design: Owner, Pet, Task, Scheduler
+
+    class Owner {
+        +String name
+        +int available_minutes_per_day
+        +List~Pet~ pets
+        +add_pet(pet) void
+        +remove_pet(pet) void
+        +get_all_tasks() List~Task~
+    }
+
+    class Pet {
+        +String name
+        +String species
+        +int age
+        +List~Task~ tasks
+        +add_task(task) void
+        +remove_task(task) void
+        +get_pending_tasks() List~Task~
+    }
+
+    class Task {
+        +String title
+        +String category
+        +int duration_minutes
+        +int priority
+        +String preferred_time
+        +bool completed
+        +mark_complete() void
+    }
+
+    class Scheduler {
+        +Owner owner
+        +build_daily_plan() List~Task~
+        +explain_plan() String
+    }
+
+    Owner "1" *-- "0..*" Pet : has
+    Pet "1" *-- "0..*" Task : needs
+    Scheduler "1" --> "1" Owner : plans for
+    Scheduler ..> Task : orders and selects
