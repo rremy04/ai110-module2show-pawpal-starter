@@ -81,18 +81,26 @@ Skipped (not enough time left):
 
 ## 🧪 Testing PawPal+
 
+Run the full test suite from the project root:
+
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
 
-Sample test output:
+The 23 tests in `tests/test_pawpal.py` cover the core scheduling logic:
+
+- **Task basics:** marking a task complete, adding a task to a pet, and validation (a duration of 0 or an unknown frequency raises `ValueError`).
+- **Sorting:** `sort_by_time` returns tasks in chronological order, puts untimed tasks last, keeps the original order for ties, and works across multiple pets and with no tasks.
+- **Recurrence:** completing a daily or weekly task adds the next copy (due 1 or 7 days later, counted from the task's due date). The copy is pending and keeps the original's time and pet. One-off tasks create nothing.
+- **Conflict detection:** tasks at the same date and time are flagged, within one pet and across pets. Different days, untimed tasks and completed tasks are not flagged, and no tasks gives no warnings.
+- **Plan building:** high-priority tasks are chosen first, tasks that don't fit are skipped, and a task that exactly fills the budget is allowed. Completed and not-yet-due tasks are excluded, and an owner with no tasks gets an empty plan.
+- **Filtering:** by pet name and by completion status.
+
+Sample output:
 
 ```
-# Paste your pytest output here
+.......................                                                  [100%]
+23 passed in 0.03s
 ```
 
 ## 📐 Smarter Scheduling
@@ -115,6 +123,7 @@ Beyond the priority-and-time-budget plan, the scheduler has four extra features.
 **Recurring tasks.** `Scheduler.mark_task_complete(task)` marks the task done. If its frequency is "daily" or "weekly", `Task.next_occurrence()` makes a copy due 1 day or 7 days later (using `timedelta`), and the scheduler adds it to the same pet. One-off ("once") tasks create nothing. `build_daily_plan()` ignores tasks that aren't due yet, so tomorrow's copy doesn't appear in today's plan.
 
 ## 📸 Demo Walkthrough
+My confidence level would be 4. 
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
