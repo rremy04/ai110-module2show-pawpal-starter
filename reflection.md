@@ -53,19 +53,26 @@
 - **What I did not accept yet:** I held off on recurring-task logic and making Owner a dataclass. `frequency` is stored but not used by the scheduler yet, so a daily task stays completed until it is reset.
 - **How I verified:** I ran `python main.py` and checked that the schedule respected the 60-minute limit, skipped the low-priority grooming task, and included tasks from both pets. I also wrote two pytest tests, one for `mark_complete()` and one for `add_task()`, and ran `python -m pytest` to confirm they pass.
 
+**c. AI strategy**
+
+- **Most effective features:** Having the assistant read my actual files, so it could review my skeleton and then write and run the tests, was the most effective way to build the scheduler.
+- **A suggestion I rejected or modified:** The skeleton review suggested about ten changes, and I kept only the three that mattered (`pet_name` on Task, `plan`/`skipped` on Scheduler, and the Priority enum) and kept tasks on Pet instead of moving them elsewhere, which kept the design simple.
+- **Separate chat sessions:** Using a separate chat for each phase (design, implementation, testing) kept each conversation focused on one job so the assistant didn't mix up old design ideas with the current code.
+- **Being the lead architect:** The AI can write code quickly, but I had to decide what the system should be, accept or reject each suggestion, and check the results with tests and by running the app.
+
 ---
 
 ## 4. Testing and Verification
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+-  I tested sorting by time, daily and weekly recurrence, conflict detection, plan building within the time budget, filtering, and input validation, including edge cases like a pet with no tasks and two tasks at the same time.
+- These are the behaviors the whole plan depends on, so a silent bug in any of them would give the owner a wrong or missing schedule without any error.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+- I'm 4 out of 5 confident because all 23 tests pass, but conflicts only match identical start times and the UI layer isn't tested.
+- I would test overlapping durations (like 09:00 for 30 minutes and 09:15), badly formatted times like "9:00", and recurrence across month and year boundaries.
 
 ---
 
@@ -73,12 +80,12 @@
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+- I'm most satisfied that the Scheduler's smart features (sorting, filtering, conflict warnings and recurrence) work together and show up clearly in the Streamlit UI.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+- With another iteration I would make conflict detection catch overlapping durations and validate the "HH:MM" time format.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+- The most important thing I learned is that the AI can write code quickly, but I have to be the one who decides the design and checks it with tests.

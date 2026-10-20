@@ -1,0 +1,64 @@
+classDiagram
+    %% PawPal+ final design, matching pawpal_system.py
+
+    class Owner {
+        +String name
+        +int available_minutes_per_day
+        +List~Pet~ pets
+        +add_pet(pet) void
+        +remove_pet(pet) void
+        +get_all_tasks() List~Task~
+    }
+
+    class Pet {
+        +String name
+        +String species
+        +int age
+        +List~Task~ tasks
+        +add_task(task) void
+        +remove_task(task) void
+        +get_pending_tasks() List~Task~
+    }
+
+    class Task {
+        +String title
+        +String category
+        +int duration_minutes
+        +Priority priority
+        +String pet_name
+        +String preferred_time
+        +String frequency
+        +bool completed
+        +String time
+        +date due_date
+        +mark_complete() void
+        +next_occurrence() Task
+        +reset() void
+    }
+
+    class Scheduler {
+        +Owner owner
+        +List~Task~ plan
+        +List~Task~ skipped
+        +build_daily_plan() List~Task~
+        +sort_by_time(tasks) List~Task~
+        +filter_tasks(pet_name, completed) List~Task~
+        +mark_task_complete(task) Task
+        +detect_conflicts() List~String~
+        +explain_plan() String
+    }
+
+    class Priority {
+        <<enumeration>>
+        LOW = 1
+        MEDIUM = 2
+        HIGH = 3
+    }
+
+    Task --> Priority : has
+    Owner "1" *-- "0..*" Pet : has
+    Pet "1" *-- "0..*" Task : needs
+    Scheduler "1" --> "1" Owner : plans for
+    Scheduler ..> Task : selects, sorts, filters, flags conflicts
+    Scheduler ..> Pet : adds next recurring task to
+    Task ..> Task : next_occurrence() creates a copy

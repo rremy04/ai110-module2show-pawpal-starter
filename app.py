@@ -1,3 +1,5 @@
+from datetime import time
+
 import streamlit as st
 
 from pawpal_system import Owner, Pet, Priority, Scheduler, Task
@@ -72,6 +74,8 @@ else:
             category = st.text_input("Category", placeholder="exercise")
             preferred_time = st.selectbox("Preferred time", ["morning", "afternoon", "evening"])
             frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
+        set_time = st.checkbox("Set an exact start time (lets PawPal+ spot clashes)")
+        start_time = st.time_input("Start time", value=time(9, 0))
         if st.form_submit_button("Add task"):
             if not title.strip():
                 st.error("Please enter a task title.")
@@ -85,25 +89,70 @@ else:
                         Priority[priority_name],
                         preferred_time=preferred_time,
                         frequency=frequency,
+                        time=start_time.strftime("%H:%M") if set_time else "",
                     )
                 )
                 st.success(f"Added '{title.strip()}' to {target_name}.")
 
+scheduler = Scheduler(owner)
+
+
+def show_conflicts(sched: Scheduler) -> None:
+    """Show each clash as a warning that says what to do about it."""
+    for message in sched.detect_conflicts():
+        st.warning(
+            message.removeprefix("Warning: ")
+            + "\n\nYou can't be in two places at once. Move one of these to a different time."
+        )
+
+
 all_tasks = owner.get_all_tasks()
 if all_tasks:
-    st.table(
-        [
-            {
-                "Pet": t.pet_name,
-                "Task": t.title,
-                "Minutes": t.duration_minutes,
-                "Priority": t.priority.name,
-                "Time": t.preferred_time,
-                "Frequency": t.frequency,
-            }
-            for t in all_tasks
-        ]
+    show_conflicts(scheduler)
+
+    f1, f2 = st.columns(2)
+    with f1:
+        pet_filter = st.selectbox("Show pet", ["All pets"] + [p.name for p in owner.pets])
+    with f2:
+        status_filter = st.selectbox("Show status", ["All", "Pending", "Completed"])
+    shown = scheduler.filter_tasks(
+        pet_name=None if pet_filter == "All pets" else pet_filter,
+        completed={"All": None, "Pending": False, "Completed": True}[status_filter],
     )
+    shown = scheduler.sort_by_time(shown)  # earliest start time first, untimed last
+
+    if shown:
+        st.caption("Sorted by start time; tasks without one are listed last.")
+        st.table(
+            [
+                {
+                    "Start": t.time or "-",
+                    "Date": t.due_date.isoformat(),
+                    "Pet": t.pet_name,
+                    "Task": t.title,
+                    "Minutes": t.duration_minutes,
+                    "Priority": t.priority.name,
+                    "Frequency": t.frequency,
+                    "Done": "✅" if t.completed else "",
+                }
+                for t in shown
+            ]
+        )
+    else:
+        st.info("No tasks match those filters.")
+
+    pending = [t for t in all_tasks if not t.completed]
+    if pending:
+        labels = [f"{t.title} ({t.pet_name}, {t.due_date})" for t in pending]
+        chosen = st.selectbox("Mark a task complete", range(len(pending)), format_func=labels.__getitem__)
+        if st.button("Mark complete"):
+            following = scheduler.mark_task_complete(pending[chosen])
+            st.toast(
+                f"Done! The next {following.frequency} copy is due {following.due_date}."
+                if following
+                else "Done!"
+            )
+            st.rerun()  # refresh the table above with the new status
 elif owner.pets:
     st.info("No tasks yet. Add one above.")
 
@@ -112,8 +161,8 @@ st.divider()
 # --- Schedule ---
 st.subheader("Today's Schedule")
 if st.button("Generate schedule"):
-    scheduler = Scheduler(owner)
     plan = scheduler.build_daily_plan()
+    show_conflicts(scheduler)
     if not plan and not scheduler.skipped:
         st.warning("There are no pending tasks to schedule.")
     else:

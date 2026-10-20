@@ -33,6 +33,18 @@ The logic layer lives in [pawpal_system.py](pawpal_system.py) and is built from 
 
 Flow: `Owner` → `Pet`s → `Task`s are gathered by `Owner.get_all_tasks()`, then `Scheduler.build_daily_plan()` selects and orders them. Run `python main.py` for a terminal demo and `python -m pytest` for the tests.
 
+## ✨ Features
+
+- **Priority-based daily plan:** tasks are considered highest priority first (shorter tasks win ties) and added until the owner's daily minutes run out. A task that doesn't fit is skipped, but smaller ones can still fill the remaining time.
+- **Time-of-day ordering:** the chosen tasks are ordered morning, afternoon, evening. Tasks with no preferred time go last.
+- **Sorting by start time:** `sort_by_time()` lists tasks by their exact "HH:MM" time, earliest first, with untimed tasks at the end.
+- **Filtering:** `filter_tasks()` narrows the list by pet, by completed or pending, or both.
+- **Conflict warnings:** `detect_conflicts()` warns when two or more pending tasks share the same date and start time, across pets or within one. It returns warnings and never crashes.
+- **Daily and weekly recurrence:** completing a recurring task automatically adds the next one to the same pet, due 1 or 7 days later. One-off tasks don't repeat.
+- **Due dates:** tasks that aren't due yet (such as tomorrow's copy of a daily task) stay out of today's plan.
+- **Plan explanations:** `explain_plan()` says what was scheduled, what was skipped, and why.
+- **Input validation:** a duration of 0 or an unknown frequency is rejected with a clear error.
+
 ## Getting started
 
 ### Setup
@@ -123,14 +135,85 @@ Beyond the priority-and-time-budget plan, the scheduler has four extra features.
 **Recurring tasks.** `Scheduler.mark_task_complete(task)` marks the task done. If its frequency is "daily" or "weekly", `Task.next_occurrence()` makes a copy due 1 day or 7 days later (using `timedelta`), and the scheduler adds it to the same pet. One-off ("once") tasks create nothing. `build_daily_plan()` ignores tasks that aren't due yet, so tomorrow's copy doesn't appear in today's plan.
 
 ## 📸 Demo Walkthrough
-My confidence level would be 4. 
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+Run the app with `streamlit run app.py`. The page is one scrolling screen, top to bottom.
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+### What you can do in the UI
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+- **Owner:** set your name and how many minutes you have each day.
+- **Pets:** add a pet with a name, species and age. The pet table shows how many tasks each pet has. Empty or duplicate names are rejected.
+- **Tasks:** add a task for a pet with a title, category, duration, priority, preferred time of day and frequency (once, daily or weekly). You can also give it an exact start time.
+- **Task list:** filter by pet and by status (all, pending, completed). The table is sorted by start time, with a ✅ on finished tasks.
+- **Mark complete:** pick a pending task and mark it done. If it repeats, the next copy appears automatically.
+- **Today's Schedule:** press "Generate schedule" to get the plan, any skipped tasks, and a "Why this plan?" explanation.
+
+### Example workflow
+
+1. Set your name and daily minutes (for example, 60).
+2. Add a pet, such as Max the dog, then another, such as Luna the cat.
+3. Add tasks. Give "Vet call" and "Training" the same exact start time, 09:00.
+4. A yellow warning appears above the task list naming both tasks and suggesting you move one to a different time.
+5. Change the filters to see only Luna's pending tasks. The list stays sorted by start time.
+
+### Scheduler behaviors you will see
+
+- **Sorting:** the task list is always ordered by start time, with untimed tasks last.
+- **Conflict warnings:** two pending tasks at the same date and time are flagged. Overlapping durations are not.
+- **Recurrence:** completing a daily or weekly task creates its next occurrence, which stays out of today's plan until it is due.
+- **Fitting the time budget:** high-priority tasks are scheduled first, and what doesn't fit is listed as skipped.
+
+### Sample CLI output
+
+Output from `python main.py`, which runs the same Scheduler logic in the terminal (dates depend on the day you run it):
+
+```
+Sorted by time:
+  07:15  Brush fur (Luna)
+  09:00  Vet call (Max)
+  09:00  Training (Max)
+  18:30  Evening meds (Luna)
+  --:--  Morning walk (Max)
+  --:--  Grooming (Max)
+  --:--  Feed dinner (Luna)
+  --:--  Play session (Luna)
+
+Conflict check:
+  Warning: 2 tasks at 09:00 on 2026-10-19: Vet call (Max), Training (Max)
+
+Recurring: completing 'Feed dinner' (daily) and 'Brush fur' (weekly)
+  Feed dinner: next due 2026-10-20
+  Brush fur: next due 2026-10-26
+  Luna tasks: 6, Max tasks: 4
+
+Filter: Luna's pending tasks
+  Play session due 2026-10-19
+  Evening meds due 2026-10-19
+  Feed dinner due 2026-10-20
+  Brush fur due 2026-10-26
+Filter: all completed tasks
+  Morning walk (Max)
+  Feed dinner (Luna)
+  Brush fur (Luna)
+
+Today's Schedule for Sam
+========================================================
+Time       Task          Pet      Min  Priority
+--------------------------------------------------------
+afternoon  Play session  Luna      15  MEDIUM
+anytime    Evening meds  Luna       5  HIGH
+anytime    Vet call      Max       10  MEDIUM
+anytime    Training      Max       20  MEDIUM
+--------------------------------------------------------
+Skipped (not enough time):
+  Grooming (Max), 40 min, LOW
+--------------------------------------------------------
+Total: 50 of 60 minutes
+
+Planned 50 of 60 available minutes.
+- Play session (Luna): 15 min, MEDIUM priority, afternoon
+- Evening meds (Luna): 5 min, HIGH priority
+- Vet call (Max): 10 min, MEDIUM priority
+- Training (Max): 20 min, MEDIUM priority
+Skipped (not enough time left):
+- Grooming (Max): 40 min, LOW priority
+```
