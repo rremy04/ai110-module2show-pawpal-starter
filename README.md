@@ -97,14 +97,22 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+Beyond the priority-and-time-budget plan, the scheduler has four extra features. Run `python main.py` to see each one in the terminal.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Sorting | `Scheduler.sort_by_time()` | Orders tasks by their exact `time` ("HH:MM"). |
+| Filtering | `Scheduler.filter_tasks()` | Filters by pet name, completion status, or both. |
+| Conflict detection | `Scheduler.detect_conflicts()` | Warns when pending tasks share a date and start time. |
+| Recurring tasks | `Task.next_occurrence()`, `Scheduler.mark_task_complete()` | Completing a daily or weekly task creates the next one. |
+
+**Sorting.** `sort_by_time()` uses `sorted()` with a lambda key, `(t.time == "", t.time)`. Zero-padded "HH:MM" strings already sort correctly as text, so no time parsing is needed. Tasks with no time go last.
+
+**Filtering.** `filter_tasks(pet_name=None, completed=None)` returns the tasks that match every filter you pass. Leaving a filter as `None` means "any", so `filter_tasks(pet_name="Luna", completed=False)` gives Luna's pending tasks.
+
+**Conflict detection.** `detect_conflicts()` groups pending tasks by `(due_date, time)` and returns a list of warning strings, one for each slot with more than one task. It never raises, and it checks across pets as well as within one pet. It only matches exact start times, not overlapping durations (for example, a 30-minute task at 09:00 and another at 09:15 are not flagged). That keeps it simple and predictable.
+
+**Recurring tasks.** `Scheduler.mark_task_complete(task)` marks the task done. If its frequency is "daily" or "weekly", `Task.next_occurrence()` makes a copy due 1 day or 7 days later (using `timedelta`), and the scheduler adds it to the same pet. One-off ("once") tasks create nothing. `build_daily_plan()` ignores tasks that aren't due yet, so tomorrow's copy doesn't appear in today's plan.
 
 ## 📸 Demo Walkthrough
 

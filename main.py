@@ -37,7 +37,38 @@ def main() -> None:
     luna.add_task(Task("Feed dinner", "feeding", 10, Priority.HIGH, preferred_time="evening", frequency="daily"))
     luna.add_task(Task("Play session", "play", 15, Priority.MEDIUM, preferred_time="afternoon"))
 
+    # Added out of order on purpose, with exact times, to exercise the new features.
+    luna.add_task(Task("Evening meds", "health", 5, Priority.HIGH, time="18:30"))
+    max_dog.add_task(Task("Vet call", "health", 10, Priority.MEDIUM, time="09:00"))
+    luna.add_task(Task("Brush fur", "care", 10, Priority.LOW, time="07:15", frequency="weekly"))
+    max_dog.add_task(Task("Training", "exercise", 20, Priority.MEDIUM, time="09:00"))  # clashes with Vet call
+
     scheduler = Scheduler(owner)
+
+    print("Sorted by time:")
+    for t in scheduler.sort_by_time():
+        print(f"  {t.time or '--:--'}  {t.title} ({t.pet_name})")
+
+    print("\nConflict check:")
+    for warning in scheduler.detect_conflicts() or ["No conflicts."]:
+        print(f"  {warning}")
+
+    print("\nRecurring: completing 'Feed dinner' (daily) and 'Brush fur' (weekly)")
+    for t in list(luna.tasks):
+        if t.title in ("Feed dinner", "Brush fur"):
+            new = scheduler.mark_task_complete(t)
+            print(f"  {t.title}: next due {new.due_date}")
+    scheduler.mark_task_complete(max_dog.tasks[0])  # "once" task: no new copy
+    print(f"  Luna tasks: {len(luna.tasks)}, Max tasks: {len(max_dog.tasks)}")
+
+    print("\nFilter: Luna's pending tasks")
+    for t in scheduler.filter_tasks(pet_name="Luna", completed=False):
+        print(f"  {t.title} due {t.due_date}")
+    print("Filter: all completed tasks")
+    for t in scheduler.filter_tasks(completed=True):
+        print(f"  {t.title} ({t.pet_name})")
+
+    print()
     scheduler.build_daily_plan()
     print_schedule(scheduler)
     print()
