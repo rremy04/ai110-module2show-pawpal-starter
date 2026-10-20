@@ -22,6 +22,17 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Implementation Summary
+
+The logic layer lives in [pawpal_system.py](pawpal_system.py) and is built from four classes:
+
+- **Task** (dataclass): one care activity with a title, duration, `Priority` (LOW/MEDIUM/HIGH), preferred time of day, frequency, and completion status.
+- **Pet** (dataclass): a pet's details plus its list of tasks. `add_task` tags each task with the pet's name so the plan can show who it is for.
+- **Owner**: has a daily time budget and many pets. `get_all_tasks()` returns every pet's tasks in one list.
+- **Scheduler**: the "brain". It reads from `owner.get_all_tasks()` (never from a single pet), keeps pending tasks, picks the highest-priority ones that fit the time budget, orders them by time of day, and records what was scheduled (`plan`) and skipped (`skipped`). `explain_plan()` turns that into readable reasoning.
+
+Flow: `Owner` → `Pet`s → `Task`s are gathered by `Owner.get_all_tasks()`, then `Scheduler.build_daily_plan()` selects and orders them. Run `python main.py` for a terminal demo and `python -m pytest` for the tests.
+
 ## Getting started
 
 ### Setup
@@ -44,14 +55,28 @@ pip install -r requirements.txt
 
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+Output from running `python main.py` (one owner, two pets, four tasks, 60 available minutes):
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Today's Schedule for Sam
+========================================================
+Time       Task          Pet      Min  Priority
+--------------------------------------------------------
+morning    Morning walk  Max       30  HIGH
+afternoon  Play session  Luna      15  MEDIUM
+evening    Feed dinner   Luna      10  HIGH
+--------------------------------------------------------
+Skipped (not enough time):
+  Grooming (Max), 40 min, LOW
+--------------------------------------------------------
+Total: 55 of 60 minutes
+
+Planned 55 of 60 available minutes.
+- Morning walk (Max): 30 min, HIGH priority, morning
+- Play session (Luna): 15 min, MEDIUM priority, afternoon
+- Feed dinner (Luna): 10 min, HIGH priority, evening
+Skipped (not enough time left):
+- Grooming (Max): 40 min, LOW priority
 ```
 
 ## 🧪 Testing PawPal+

@@ -24,7 +24,8 @@ classDiagram
         +String title
         +String category
         +int duration_minutes
-        +int priority
+        +Priority priority
+        +String pet_name
         +String preferred_time
         +bool completed
         +mark_complete() void
@@ -32,10 +33,20 @@ classDiagram
 
     class Scheduler {
         +Owner owner
+        +List~Task~ plan
+        +List~Task~ skipped
         +build_daily_plan() List~Task~
         +explain_plan() String
     }
 
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+    }
+
+    Task --> Priority : has
     Owner "1" *-- "0..*" Pet : has
     Pet "1" *-- "0..*" Task : needs
     Scheduler "1" --> "1" Owner : plans for
